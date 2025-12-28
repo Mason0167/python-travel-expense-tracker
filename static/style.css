@@ -262,6 +262,13 @@ input[type="date"].input-field {
     background-color: #c0392b; /* darker red on hover */
 }
 
+.btn-danger{
+    background-color: #e74c3c; /* red */
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
 .btn-cancel{
     background-color: #e74c3c;
     width: 100%;
