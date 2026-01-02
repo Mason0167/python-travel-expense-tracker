@@ -360,7 +360,6 @@ def index():
         countries = []
         
         c.execute("SELECT id, trip_name, country_id FROM trips")
-        print("TRIPS:", c.fetchall())
         
         # Fetch countries for dropdown
         c.execute('''
