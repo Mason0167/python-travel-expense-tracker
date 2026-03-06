@@ -1,5 +1,5 @@
 # Accounting App
-A simple **mobile-friendly expense tracker** built with **Python** and **Flask**.  
+An simple ongling **mobile-friendly expense tracker** built with **Python** and **Flask**.  
 Track your daily expenses, view totals, and manage trips easily.
 
 ## Features
