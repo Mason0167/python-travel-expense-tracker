@@ -1,15 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages, send_file, session
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, abort
+from flask_login import current_user, LoginManager
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import sqlite3
 import os
-import re
 
 
 app = Flask(__name__)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+login_manager.login_view = "login"  # endpoint name
 DB_FILE = 'expenses.db'
 app.secret_key = 'your_secret_key_here'
+
+@login_manager.user_loader
+def load_user(user_id):
+    # fetch user from DB
+    return User.get(user_id)
+
+# A helper to generate emoji flags
+def country_flag(code):
+    if not code or len(code) != 2:
+        return ''
+    return chr(0x1F1E6 + ord(code[0].upper()) - 65) + \
+           chr(0x1F1E6 + ord(code[1].upper()) - 65)
 
 # 初始化資料庫
 def init_db():
@@ -35,7 +52,9 @@ def init_db():
                 end_date TEXT,
                 
                 country_id INTEGER,
+                user_id INTEGER,
                 FOREIGN KEY(country_id) REFERENCES countries(id)
+                FOREIGN KEY(users_id) REFERENCES users(id),
             )
         ''')
 
@@ -54,7 +73,7 @@ def init_db():
             ('South Korea', 'KR'),
             ('Vietnam', 'VN'),
             ('United States', 'US'),
-            ('United Kindom', 'GB')
+            ('United Kingdom', 'GB')
         ]
         
         c.executemany(
@@ -161,21 +180,25 @@ def init_db():
                 )
         
         # expenses table
-        c.execute('''CREATE TABLE IF NOT EXISTS expenses (
-                     id INTEGER PRIMARY KEY, 
-                     purchase_date TEXT,
-                     item TEXT, 
-                     amount REAL,
+        c.execute('''
+                  CREATE TABLE IF NOT EXISTS expenses (
+
+                  id INTEGER PRIMARY KEY, 
+                  purchase_date TEXT,
+                  item TEXT, 
+                  amount REAL,
                      
-                     currency_id INTEGER,
-                     method_id INTEGER, 
-                     category_id INTEGER,
-                     trip_id INTEGER,
+                  currency_id INTEGER,
+                  method_id INTEGER, 
+                  category_id INTEGER,
+                  trip_id INTEGER,
+                  user_id INTEGER,
                   
-                     FOREIGN KEY(currency_id) REFERENCES currencies(id),
-                     FOREIGN KEY(method_id) REFERENCES paymentMethods(id),
-                     FOREIGN KEY(category_id) REFERENCES categories(id),
-                     FOREIGN KEY(trip_id) REFERENCES trips(id)
+                  FOREIGN KEY(currency_id) REFERENCES currencies(id),
+                  FOREIGN KEY(method_id) REFERENCES paymentMethods(id),
+                  FOREIGN KEY(category_id) REFERENCES categories(id),
+                  FOREIGN KEY(users_id) REFERENCES users(id),
+                  FOREIGN KEY(trip_id) REFERENCES trips(id)
                     )
                 ''')
                 
@@ -195,17 +218,17 @@ def login_required(f):
     
 # Validate password strongness
 def is_strong_password(password):
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
+    # if len(password) < 8:
+    #     return False, "Password must be at least 8 characters long"
 
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter"
+    # if not re.search(r"[A-Z]", password):
+    #     return False, "Password must contain at least one uppercase letter"
 
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter"
+    # if not re.search(r"[a-z]", password):
+    #     return False, "Password must contain at least one lowercase letter"
 
-    if not re.search(r"[0-9]", password):
-        return False, "Password must contain at least one number"
+    # if not re.search(r"[0-9]", password):
+    #     return False, "Password must contain at least one number"
 
     if " " in password:
         return False, "Password cannot contain spaces"
@@ -354,20 +377,21 @@ def logout():
 @app.route('/')
 @login_required
 def index():
+     user_id = current_user.id
+
      with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
-        
-        countries = []
-        
-        c.execute("SELECT id, trip_name, country_id FROM trips")
-        
+                
         # Fetch countries for dropdown
         c.execute('''
-                SELECT DISTINCT c.id, c.country_name, c.country_code
-                FROM countries c
-                JOIN trips t ON t.country_id = c.id
-                ORDER BY c.id
-        ''')
+                  SELECT DISTINCT c.id, c.country_name, c.country_code
+                  FROM countries c
+                  JOIN trips t ON t.country_id = c.id
+                  WHERE t.user_id = ?
+                  ORDER BY c.id
+        ''', (user_id,))
+
+        countries = []
         for r in c.fetchall():
             countries.append({
                 'id': r[0],
@@ -386,6 +410,8 @@ def index():
 @app.route('/tripSelection', methods=['GET', 'POST'])
 @login_required
 def tripSelection():
+    user_id = current_user.id
+
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
         
@@ -459,8 +485,8 @@ def tripSelection():
                 SELECT t.id, t.trip_name, t.start_date, t.end_date, c.country_code
                 FROM trips t
                 JOIN countries c ON t.country_id = c.id
-
-        ''')
+                WHERE t.user_id = ?
+        ''', (user_id,))
         trips_list = c.fetchall()
 
         
@@ -479,11 +505,13 @@ def tripSelection():
             
             trip_id = trip[0]
             c.execute('''
-                SELECT SUM(e.amount * r.rate_to_base) 
-                FROM expenses e
-                JOIN exchange_rates r ON e.currency_id = r.currency_id
-                WHERE e.trip_id = ?
-            ''', (trip_id,))
+                      
+                      SELECT SUM(e.amount * r.rate_to_base) 
+                      FROM expenses e
+                      JOIN exchange_rates r ON e.currency_id = r.currency_id
+                      WHERE e.trip_id = ?
+                      AND e.user_id = ?
+            ''', (trip_id, user_id))
             
             row = c.fetchone()
             total_in_base = row[0] if row[0] is not None else 0
@@ -516,6 +544,8 @@ def tripSelection():
 @app.route('/newExpense', methods=['GET', 'POST'])
 @login_required
 def newExpense():
+    user_id = current_user.id
+
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
         
@@ -539,17 +569,16 @@ def newExpense():
         trips = [{'id': r[0], 'trip_name': r[1]} for r in c.fetchall()]
         
         trip_id = request.args.get('trip_id', type=int)
-        if request.method == 'POST':
-            flash("Please select a trip before add a new expense!", "error")        
             
         if trip_id:
             # Fetch trip_name, start_date for trip info card
             c.execute('''
-                    SELECT t.trip_name, t.start_date, c.country_code
-                    FROM trips t
-                    JOIN countries c ON t.country_id = c.id
-                    WHERE t.id=?
-            ''', (trip_id,))
+                      SELECT t.trip_name, t.start_date, c.country_code
+                      FROM trips t
+                      JOIN countries c ON t.country_id = c.id
+                      WHERE t.id = ?
+                      AND t.user_id = ?
+            ''', (trip_id, user_id))
             row = c.fetchone()
             if row:
                 row = {
@@ -657,17 +686,22 @@ def newExpense():
                     except sqlite3.IntegrityError:
                         flash("Oh no! Something went wrong!", "error")
                         errors = True
-                        
+        else:
+            if request.method == 'POST':
+                flash("Please select a trip before add a new expense!", "error")        
+
+
         # Fetch expenses only for selected trip
         if trip_id:
             c.execute('''
-                SELECT e.id, e.purchase_date, c.cat_name, e.item, e.amount, cu.code, cu.symbol
-                FROM expenses e
-                JOIN categories c ON e.category_id = c.id
-                JOIN currencies cu ON e.currency_id = cu.id
-                WHERE trip_id = ? 
-                ORDER BY e.purchase_date DESC
-            ''', (trip_id,))
+                      SELECT e.id, e.purchase_date, c.cat_name, e.item, e.amount, cu.code, cu.symbol
+                      FROM expenses e
+                      JOIN categories c ON e.category_id = c.id
+                      JOIN currencies cu ON e.currency_id = cu.id
+                      WHERE trip_id = ? 
+                      AND user_id = ?
+                      ORDER BY e.purchase_date DESC
+            ''', (trip_id, user_id))
             rows = c.fetchall()
 
             for e in rows:
@@ -712,6 +746,7 @@ def newExpense():
 @app.route('/viewExpense')
 @login_required
 def viewExpense():
+    user_id = current_user.id
     errors = False
     
     dates = []
@@ -746,21 +781,23 @@ def viewExpense():
             if trip_id:
                 # Fetch only purchase dates that exist for this trip
                 c.execute('''
-                    SELECT DISTINCT purchase_date
-                    FROM expenses
-                    WHERE trip_id = ?
-                    ORDER BY purchase_date
-                ''', (trip_id,))
+                          SELECT DISTINCT purchase_date
+                          FROM expenses
+                          WHERE trip_id = ?
+                          AND user_id = ?
+                          ORDER BY purchase_date
+                ''', (trip_id, user_id))
                 dates = [r[0] for r in c.fetchall()]
                 
                 # Fetch all categoies that exist for this trip
                 c.execute('''
-                    SELECT DISTINCT c.cat_name
-                    FROM categories c
-                    JOIN expenses e ON e.category_id = c.id
-                    WHERE e.trip_id = ?
-                    ORDER BY c.order_index
-                ''', (trip_id,))
+                          SELECT DISTINCT c.cat_name
+                          FROM categories c
+                          JOIN expenses e ON e.category_id = c.id
+                          WHERE e.trip_id = ?
+                          AND e.user_id = ?
+                          ORDER BY c.order_index
+                ''', (trip_id, user_id))
                 categories = [r[0] for r in c.fetchall()]
                 
                 # Fetch all payment methods
@@ -774,11 +811,12 @@ def viewExpense():
             if trip_id:
                 # Fetch trip info if user select a trip
                 c.execute('''
-                        SELECT t.id, t.trip_name, t.start_date, t.end_date, c.country_code
-                        FROM trips t
-                        JOIN countries c ON t.country_id = c.id
-                        WHERE t.id = ?
-                    ''', (trip_id,))
+                          SELECT t.id, t.trip_name, t.start_date, t.end_date, c.country_code
+                          FROM trips t
+                          JOIN countries c ON t.country_id = c.id
+                          WHERE t.id = ?
+                          AND t.user_id = ?
+                    ''', (trip_id, user_id))
                 row = c.fetchone()
                 
                 if row:
@@ -815,6 +853,7 @@ def viewExpense():
                     JOIN exchange_rates r ON e.currency_id = r.currency_id
                     JOIN paymentMethods p ON e.method_id = p.id
                     WHERE e.trip_id = ?
+                    AND e.user_id = ?
                 '''
                 params = [trip_id]
 
@@ -881,6 +920,7 @@ def viewExpense():
 @app.route('/editTrip/<int:trip_id>', methods=['GET', 'POST'])
 @login_required
 def editTrip(trip_id):
+    user_id = current_user.id
     errors = False
     
     with sqlite3.connect(DB_FILE) as conn:
@@ -888,9 +928,12 @@ def editTrip(trip_id):
         c = conn.cursor()
         
         c.execute('''
-                    SELECT trip_name, start_date, end_date FROM trips WHERE id = ? 
-                    ORDER BY start_date
-                ''', (trip_id,))
+                  SELECT trip_name, start_date, end_date 
+                  FROM trips 
+                  WHERE id = ? 
+                  AND user_id = ?
+                  ORDER BY start_date
+                ''', (trip_id, user_id))
         trip = c.fetchone()
                 
         if not trip:
@@ -921,10 +964,11 @@ def editTrip(trip_id):
         
             if not errors:
                 c.execute('''
-                    UPDATE trips
-                    SET trip_name = ?, start_date = ?, end_date = ?
-                    WHERE id = ?
-                ''', (new_name, new_start, new_end, trip_id))
+                          UPDATE trips
+                          SET trip_name = ?, start_date = ?, end_date = ?
+                          WHERE id = ?
+                          AND user_id = ?
+                ''', (new_name, new_start, new_end, trip_id, user_id))
                 conn.commit()
                 flash("Trip updated successfully", "success")
                 return redirect(url_for('tripSelection'))
@@ -959,6 +1003,7 @@ def deleteTrip(trip_id):
 @app.route('/editExpense/<int:trip_id>/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def editExpense(trip_id, expense_id):
+    user_id = current_user.id
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         c = conn.cursor()
@@ -1064,15 +1109,16 @@ def editExpense(trip_id, expense_id):
         
         if expense_id:
             c.execute('''
-                SELECT e.purchase_date, ca.cat_name, p.method_name, e.item, e.amount, cu.code
-                FROM expenses e
-                JOIN categories ca ON e.category_id = ca.id
-                JOIN paymentMethods p ON e.method_id = p.id
-                JOIN currencies cu ON e.currency_id = cu.id
+                      SELECT e.purchase_date, ca.cat_name, p.method_name, e.item, e.amount, cu.code
+                      FROM expenses e
+                      JOIN categories ca ON e.category_id = ca.id
+                      JOIN paymentMethods p ON e.method_id = p.id
+                      JOIN currencies cu ON e.currency_id = cu.id
                 
-                WHERE e.id = ?
-                AND trip_id = ?
-            ''', (expense_id, trip_id))
+                      WHERE e.id = ?
+                      AND trip_id = ?
+                      AND user_id = ?
+            ''', (expense_id, trip_id, user_id))
             expense_info = c.fetchone()
         
         return render_template(
@@ -1097,12 +1143,17 @@ def editExpense(trip_id, expense_id):
 @app.route('/deleteExpense/<int:expense_id>', methods=['POST'])
 @login_required
 def deleteExpense(expense_id):
+    user_id = current_user.id
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         c = conn.cursor()
         
         # Delete expense
-        c.execute('DELETE FROM expenses WHERE id = ?', (expense_id,))
+        c.execute('''DELETE FROM expenses 
+                  WHERE id = ? 
+                  AND user_id = ?
+                  ''', (expense_id, user_id))
         conn.commit()
 
     return redirect(request.referrer or url_for('tripSelection'))
@@ -1125,12 +1176,7 @@ def downloadBackup():
         mimetype='application/octet-stream'
     )
     
-# A helper to generate emoji flags
-def country_flag(code):
-    if not code or len(code) != 2:
-        return ''
-    return chr(0x1F1E6 + ord(code[0].upper()) - 65) + \
-           chr(0x1F1E6 + ord(code[1].upper()) - 65)
+
 
     
     

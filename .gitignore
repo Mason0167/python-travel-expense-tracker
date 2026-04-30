@@ -1,6 +1,7 @@
 # Node.js / VS Code 忽略檔案
 node_modules/
 .vscode/
+venv/
 *.log
 .eslintcache
 .DS_Store

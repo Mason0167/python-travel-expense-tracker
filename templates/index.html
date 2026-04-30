@@ -14,7 +14,7 @@
 
 <body>
     <div class="container">
-        <h1>{{ session.username }}'s Family Trip Expenses</h1>
+        <h1>Trip Expenses - {{ session.username|title }} </h1>
         <a href="{{ url_for('tripSelection') }}">
             <button type="button" class="btn btn-large">Add New Trip</button>
         </a>
