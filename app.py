@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, abort
-from flask_login import current_user, LoginManager
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -8,18 +7,8 @@ import os
 
 
 app = Flask(__name__)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-login_manager.login_view = "login"  # endpoint name
-DB_FILE = 'expenses.db'
 app.secret_key = 'your_secret_key_here'
-
-@login_manager.user_loader
-def load_user(user_id):
-    # fetch user from DB
-    return User.get(user_id)
+DB_FILE = 'expenses.db'
 
 # A helper to generate emoji flags
 def country_flag(code):
@@ -53,8 +42,8 @@ def init_db():
                 
                 country_id INTEGER,
                 user_id INTEGER,
-                FOREIGN KEY(country_id) REFERENCES countries(id)
-                FOREIGN KEY(users_id) REFERENCES users(id),
+                FOREIGN KEY(country_id) REFERENCES countries(id),
+                FOREIGN KEY(user_id) REFERENCES users(id)
             )
         ''')
 
@@ -197,7 +186,7 @@ def init_db():
                   FOREIGN KEY(currency_id) REFERENCES currencies(id),
                   FOREIGN KEY(method_id) REFERENCES paymentMethods(id),
                   FOREIGN KEY(category_id) REFERENCES categories(id),
-                  FOREIGN KEY(users_id) REFERENCES users(id),
+                  FOREIGN KEY(user_id) REFERENCES users(id),
                   FOREIGN KEY(trip_id) REFERENCES trips(id)
                     )
                 ''')
@@ -377,7 +366,7 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-     user_id = current_user.id
+     user_id = session['user_id']
 
      with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
@@ -410,7 +399,7 @@ def index():
 @app.route('/tripSelection', methods=['GET', 'POST'])
 @login_required
 def tripSelection():
-    user_id = current_user.id
+    user_id = session['user_id']
 
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
@@ -470,8 +459,8 @@ def tripSelection():
             if not errors:
                 try:
                     c.execute('''
-                        INSERT INTO trips (trip_name, start_date, end_date, country_id) VALUES (?, ?, ?, ?)
-                        ''', (db_trip_name, start_date, end_date, country_id)
+                        INSERT INTO trips (trip_name, start_date, end_date, country_id, user_id) VALUES (?, ?, ?, ?, ?)
+                        ''', (db_trip_name, start_date, end_date, country_id, user_id)
                     )
                     conn.commit()
                     flash(f'"{ui_trip_name}" added successfully!', 'success')
@@ -544,7 +533,7 @@ def tripSelection():
 @app.route('/newExpense', methods=['GET', 'POST'])
 @login_required
 def newExpense():
-    user_id = current_user.id
+    user_id = session['user_id']
 
     with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
@@ -565,7 +554,12 @@ def newExpense():
         currency = ''
         
         # Fetch all trips for dropdown
-        c.execute('SELECT id, trip_name FROM trips ORDER BY start_date')
+        c.execute('''
+                  SELECT id, trip_name 
+                  FROM trips 
+                  WHERE user_id = ?
+                  ORDER BY start_date
+                  ''', (user_id, ))
         trips = [{'id': r[0], 'trip_name': r[1]} for r in c.fetchall()]
         
         trip_id = request.args.get('trip_id', type=int)
@@ -675,9 +669,9 @@ def newExpense():
                     # Ensure insert successfully or not
                     try:
                         c.execute('''
-                            INSERT INTO expenses (trip_id, category_id, method_id, item, amount, currency_id, purchase_date)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        ''', (trip_id, category_id, payment_id, item, amount, currency_id, purchase_date))
+                            INSERT INTO expenses (trip_id, category_id, method_id, item, amount, currency_id, purchase_date, user_id)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (trip_id, category_id, payment_id, item, amount, currency_id, purchase_date, user_id))
                         
                         conn.commit()
                         flash("Expense added successfully!", "success")
@@ -746,7 +740,7 @@ def newExpense():
 @app.route('/viewExpense')
 @login_required
 def viewExpense():
-    user_id = current_user.id
+    user_id = session['user_id']
     errors = False
     
     dates = []
@@ -773,7 +767,12 @@ def viewExpense():
             c = conn.cursor()
 
             # Fetch all trips for dropdown
-            c.execute('SELECT id, trip_name FROM trips ORDER BY id DESC')
+            c.execute('''
+                      SELECT id, trip_name 
+                      FROM trips 
+                      WHERE user_id = ?
+                      ORDER BY id DESC
+                      ''', (user_id,))
             trips = [{'id': r[0], 'trip_name': r[1]} for r in c.fetchall()]
 
             
@@ -855,7 +854,7 @@ def viewExpense():
                     WHERE e.trip_id = ?
                     AND e.user_id = ?
                 '''
-                params = [trip_id]
+                params = [trip_id, user_id]
 
                 if selected_date:
                     query += ' AND e.purchase_date = ?'
@@ -920,7 +919,7 @@ def viewExpense():
 @app.route('/editTrip/<int:trip_id>', methods=['GET', 'POST'])
 @login_required
 def editTrip(trip_id):
-    user_id = current_user.id
+    user_id = session['user_id']
     errors = False
     
     with sqlite3.connect(DB_FILE) as conn:
@@ -1003,7 +1002,7 @@ def deleteTrip(trip_id):
 @app.route('/editExpense/<int:trip_id>/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
 def editExpense(trip_id, expense_id):
-    user_id = current_user.id
+    user_id = session['user_id']
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         c = conn.cursor()
@@ -1143,7 +1142,7 @@ def editExpense(trip_id, expense_id):
 @app.route('/deleteExpense/<int:expense_id>', methods=['POST'])
 @login_required
 def deleteExpense(expense_id):
-    user_id = current_user.id
+    user_id = session['user_id']
 
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
