@@ -15,7 +15,7 @@ button, input, select, textarea {
     font-family: inherit;
 }
 
-.container {
+.index-container {
     width: 100%;
     max-width: 400px;
     background-color: #f8f0ff;

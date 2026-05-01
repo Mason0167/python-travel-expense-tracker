@@ -9,13 +9,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 </head>
 
 <body>
-    <div class="container">
+    <div class="index-container">
+        <div class="nav-container">
+            <div class="nav-home-link">
+                <span class="material-icons">home</span>
+            </div>
+
+            <div class="nav-logout">
+                <a href="{{ url_for('logout') }}">
+                    <button class="btn btn-danger">Logout</button>
+                </a>
+            </div>
+        </div>
+
         <h1>Trip Expenses - {{ session.username|title }} </h1>
-        <a href="{{ url_for('tripSelection') }}">
+
+        <!-- <a href="{{ url_for('tripSelection') }}">
             <button type="button" class="btn btn-large">Add New Trip</button>
         </a>
 
@@ -25,7 +39,7 @@
 
         <a href="{{ url_for('viewExpense') }}">
             <button type="button" class="btn btn-large">View All Expenses</button>
-        </a>
+        </a> -->
         
         <div class="visited-countries">
             <span class="label">Countries you have been to:</span>
@@ -39,9 +53,7 @@
             </div>
         </div>
 
-        <a href="{{ url_for('logout') }}">
-            <button class="btn btn-danger">Logout</button>
-        </a>
+        
     </div>
 
     <!-- Flexible Modal for Delete / Errors -->
