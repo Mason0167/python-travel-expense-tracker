@@ -14,10 +14,18 @@
 </head>
 
 <body>
-    <div class="index-container">
+    <div class="container">
         <div class="nav-container">
-            <div class="nav-home-link">
-                <span class="material-icons">home</span>
+            <div class="nav-home-container">
+                <!-- Home button with house icon -->
+                <a href="{{ url_for('index') }}">
+                    <button class="btn btn-home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9z"/>
+                        </svg>
+                    </button>
+                </a>
             </div>
 
             <div class="nav-logout">
@@ -26,21 +34,9 @@
                 </a>
             </div>
         </div>
-
-        <h1>Trip Expenses - {{ session.username|title }} </h1>
-
-        <!-- <a href="{{ url_for('tripSelection') }}">
-            <button type="button" class="btn btn-large">Add New Trip</button>
-        </a>
-
-        <a href="{{ url_for('newExpense') }}">
-            <button type="button" class="btn btn-large">Add New Expense</button>
-        </a>
-
-        <a href="{{ url_for('viewExpense') }}">
-            <button type="button" class="btn btn-large">View All Expenses</button>
-        </a> -->
         
+        <h1>Hi! {{ session.username|title }} </h1>
+
         <div class="visited-countries">
             <span class="label">Countries you have been to:</span>
 
@@ -53,37 +49,93 @@
             </div>
         </div>
 
+        <div class="tripList">
+            <!-- Display Trip Lists -->
+             <div class="tripHeader">
+                <h2>Your Trips</h2>
+                <a href="{{ url_for('newTrip') }}" class="btn btn-submit">
+                    New Trip
+                </a>
+             </div>
+            
+            <ul class="trip-list">
+                {% for trip in trips %}
+                <li class="trip-card">
+
+                    <div class="trip-info">
+                        <h3 class="trip-name">
+                            <span class="trip-flag">{{ trip.flag }}</span>
+                            <span class="trip-title">{{ trip.trip_name|title }}</span>
+                            <a href="{{ url_for('editTrip', trip_id=trip.id) }}" class="edit-btn" aria-label="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    class="icon-pencil">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                                </svg>
+                            </a>
+                        </h3>
+
+                        <p class="trip-date">
+                            {{ trip.start_date }} ({{ trip.start_weekday }}.) → {{ trip.end_date }} ({{ trip.end_weekday }}.)
+                        </p>
+
+                        <p class="trip-total">
+                            Total: {{ "%.2f"|format(trip.total_in_base) }} TWD
+                        </p>
+                    </div>
+
+                    <div class="trip-buttons">
+                        <a href="{{ url_for('viewExpense', trip_id=trip.id) }}" class="btn btn-submit">
+                            View Expenses
+                        </a>
+
+                        <button type="button" class="btn btn-delete"
+                            data-id="{{ trip.id }}" data-name="{{ trip.trip_name }}">
+                            Delete
+                        </button>
+                    </div>
+
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
         
+        <a href="{{ url_for('downloadBackup') }}">
+            <button type="button" class="btn">Download Your Expenses</button>
+        </a>
     </div>
 
+
+
     <!-- Flexible Modal for Delete / Errors -->
-        <div id="flexModal" class="modal">
-            <div class="modal-content">
-                <p id="modal-text"></p>
-                <form id="modalForm" method="POST" style="display:none;">
-                    <button type="submit" class="btn btn-cancel" id="modalConfirmBtn">Yes, Delete</button>
-                    <button type="button" class="btn btn-submit" onclick="closeModal()">Cancel</button>
-                </form>
-                <button type="button" class="btn" id="modalOkBtn" style="display:none;" onclick="closeModal()">OK</button>
-            </div>
+    <div id="flexModal" class="modal">
+        <div class="modal-content">
+            <p id="modal-text"></p>
+            <form id="modalForm" method="POST" style="display:none;">
+                <button type="submit" class="btn btn-cancel" id="modalConfirmBtn">Yes, Delete</button>
+                <button type="button" class="btn btn-submit" onclick="closeModal()">Cancel</button>
+            </form>
+            <button type="button" class="btn" id="modalOkBtn" style="display:none;" onclick="closeModal()">OK</button>
         </div>
+    </div>
 
-        <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
 
-        <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        openModal({
-                            type: '{{ category }}',
-                            text: "{{ message|escape }}"
-                        });
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-        });
-        </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    openModal({
+                        type: '{{ category }}',
+                        text: "{{ message|escape }}"
+                    });
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    });
+    </script>
 </body>
 
 </html>

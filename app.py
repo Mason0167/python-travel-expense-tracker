@@ -2,8 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import sqlite3
-import os
+import sqlite3, csv, io
 
 
 app = Flask(__name__)
@@ -371,7 +370,7 @@ def index():
      with sqlite3.connect(DB_FILE) as conn:
         c = conn.cursor()
                 
-        # Fetch countries for dropdown
+        # Fetch countries for display
         c.execute('''
                   SELECT DISTINCT c.id, c.country_name, c.country_code
                   FROM countries c
@@ -388,17 +387,65 @@ def index():
                 'country_code': r[2],
                 'flag': country_flag(r[2])
             })
+
+        # Get trips list and calculate total expense
+        c.execute('''
+                SELECT t.id, t.trip_name, t.start_date, t.end_date, c.country_code
+                FROM trips t
+                JOIN countries c ON t.country_id = c.id
+                WHERE t.user_id = ?
+        ''', (user_id,))
+        trips_list = c.fetchall()
+
+        
+        # Calculate total expenses in base currency for each trip
+        trips_with_total = []
+        for trip in trips_list:
+            trip_start_date = trip[2]
+            trip_end_date = trip[3]
+            
+            # convert DB dates → datetime
+            start_dt = datetime.strptime(trip_start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(trip_end_date, "%Y-%m-%d")
+            
+            start_weekday = start_dt.strftime("%a")
+            end_weekday = end_dt.strftime("%a")
+            
+            trip_id = trip[0]
+            c.execute('''
+                      SELECT SUM(e.amount * r.rate_to_base) 
+                      FROM expenses e
+                      JOIN exchange_rates r ON e.currency_id = r.currency_id
+                      WHERE e.trip_id = ?
+                      AND e.user_id = ?
+            ''', (trip_id, user_id))
+            
+            row = c.fetchone()
+            total_in_base = row[0] if row[0] is not None else 0
+            
+            trips_with_total.append({
+                'id': trip_id,
+                'trip_name': trip[1],
+                'start_date': trip[2],
+                'end_date': trip[3],
+                'start_weekday': start_weekday,
+                'end_weekday': end_weekday,
+                'flag': country_flag(trip[4]),
+                'total_in_base': total_in_base
+            })
+
     
     
         return render_template(
             'index.html',
-            countries=countries
+            countries=countries,
+            trips=trips_with_total,
         )
 
-# tripSelection
-@app.route('/tripSelection', methods=['GET', 'POST'])
+# newTrip
+@app.route('/newTrip', methods=['GET', 'POST'])
 @login_required
-def tripSelection():
+def newTrip():
     user_id = session['user_id']
 
     with sqlite3.connect(DB_FILE) as conn:
@@ -464,64 +511,17 @@ def tripSelection():
                     )
                     conn.commit()
                     flash(f'"{ui_trip_name}" added successfully!', 'success')
-                    return redirect(url_for('tripSelection'))  # PRG pattern 
+                    return redirect(url_for('index'))  # PRG pattern 
                 
                 except sqlite3.IntegrityError:
                     flash(f'"{ui_trip_name}" already exists!', "error")
 
-        # Refresh trips after potential insertion
-        c.execute('''
-                SELECT t.id, t.trip_name, t.start_date, t.end_date, c.country_code
-                FROM trips t
-                JOIN countries c ON t.country_id = c.id
-                WHERE t.user_id = ?
-        ''', (user_id,))
-        trips_list = c.fetchall()
-
         
-        # Calculate total expenses in base currency for each trip
-        trips_with_total = []
-        for trip in trips_list:
-            trip_start_date = trip[2]
-            trip_end_date = trip[3]
-            
-            # convert DB dates → datetime
-            start_dt = datetime.strptime(trip_start_date, "%Y-%m-%d")
-            end_dt = datetime.strptime(trip_end_date, "%Y-%m-%d")
-            
-            start_weekday = start_dt.strftime("%a")
-            end_weekday = end_dt.strftime("%a")
-            
-            trip_id = trip[0]
-            c.execute('''
-                      
-                      SELECT SUM(e.amount * r.rate_to_base) 
-                      FROM expenses e
-                      JOIN exchange_rates r ON e.currency_id = r.currency_id
-                      WHERE e.trip_id = ?
-                      AND e.user_id = ?
-            ''', (trip_id, user_id))
-            
-            row = c.fetchone()
-            total_in_base = row[0] if row[0] is not None else 0
-            
-            trips_with_total.append({
-                'id': trip_id,
-                'trip_name': trip[1],
-                'start_date': trip[2],
-                'end_date': trip[3],
-                'start_weekday': start_weekday,
-                'end_weekday': end_weekday,
-                'flag': country_flag(trip[4]),
-                'total_in_base': total_in_base
-            })
-
       
         return render_template(
-            'tripSelection.html',
+            'newTrip.html',
             
             countries=countries,
-            trips=trips_with_total,
             
             entered_trip_name=ui_trip_name,
             entered_start_date=start_date,
@@ -937,7 +937,7 @@ def editTrip(trip_id):
                 
         if not trip:
             flash("Trip not found!", "error")
-            return redirect(url_for('tripSelection'))
+            return redirect(url_for('index'))
                    
         trip_name, start_date, end_date = trip
             
@@ -970,7 +970,7 @@ def editTrip(trip_id):
                 ''', (new_name, new_start, new_end, trip_id, user_id))
                 conn.commit()
                 flash("Trip updated successfully", "success")
-                return redirect(url_for('tripSelection'))
+                return redirect(url_for('index'))
             
     return render_template(
         'editTrip.html',
@@ -996,7 +996,7 @@ def deleteTrip(trip_id):
             
         conn.commit()
 
-    return redirect(url_for('tripSelection'))
+    return redirect(url_for('index'))
     
 #editExpense
 @app.route('/editExpense/<int:trip_id>/<int:expense_id>', methods=['GET', 'POST'])
@@ -1155,24 +1155,46 @@ def deleteExpense(expense_id):
                   ''', (expense_id, user_id))
         conn.commit()
 
-    return redirect(request.referrer or url_for('tripSelection'))
+    return redirect(request.referrer or url_for('index'))
 
 @app.route('/downloadBackup')
 @login_required
 def downloadBackup():
-    db_path = DB_FILE
-
-    if not os.path.exists(db_path):
-        abort(404)
-
+    user_id = session['user_id']
+    
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+        
+        c.execute('''
+            SELECT t.trip_name, e.purchase_date, ca.cat_name, e.item, 
+                   e.amount, cu.code, p.method_name
+            FROM expenses e
+            JOIN trips t ON e.trip_id = t.id
+            JOIN categories ca ON e.category_id = ca.id
+            JOIN currencies cu ON e.currency_id = cu.id
+            JOIN paymentMethods p ON e.method_id = p.id
+            WHERE e.user_id = ?
+            ORDER BY t.trip_name, e.purchase_date
+        ''', (user_id,))
+        
+        rows = c.fetchall()
+    
+    # Build CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Trip', 'Date', 'Category', 'Item', 'Amount', 'Currency', 'Payment Method'])
+    writer.writerows(rows)
+    
+    output.seek(0)
+    
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_name = f'expense_backup_{timestamp}.db'
-
+    filename = f'expenses_{session["username"]}_{timestamp}.csv'
+    
     return send_file(
-        db_path,
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        mimetype='text/csv',
         as_attachment=True,
-        download_name=backup_name,
-        mimetype='application/octet-stream'
+        download_name=filename
     )
     
 

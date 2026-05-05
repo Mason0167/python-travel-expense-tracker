@@ -25,7 +25,7 @@
                 </button>
             </a>
 
-            <a href="{{ url_for('tripSelection') }}">
+            <a href="{{ url_for('index') }}">
                 <button type="button" class="btn btn-equal">Add New Trip</button>
             </a>
 
@@ -149,11 +149,9 @@
             <p>No Expense for this trip.</p>
         {% endif %}
 
-        <a href="{{ url_for('downloadBackup') }}">
-        <button type="button" class="btn">
-            Download All Expense Data
-        </button>
-        </a>
+        <!-- <a href="{{ url_for('newExpense', trip_id=trip.id) }}" class="btn btn-submit">
+                            New Expense
+                        </a> -->
     </div>
 
     <!-- Flexible Modal for Delete / Errors -->

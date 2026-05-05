@@ -3,7 +3,7 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trips</title>
+    <title>Create New Trip</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +32,7 @@
 
         <h1>Create New Trip</h1>
 
-        <!-- 新增旅遊表單 -->
+        <!-- New Trip Form -->
         <form method="POST" class="form-box" id="trip-form" novalidate>
             <label>Trip Name</label>
             <input type="text" name="trip_name" class="input-field"
@@ -60,50 +60,6 @@
            
             <button type="submit" class="btn btn-submit">Add New Trip</button>
         </form>
-
-        <!-- Display Trip Lists -->
-        <ul class="trip-list">
-            {% for trip in trips %}
-            <li class="trip-card">
-
-                <div class="trip-info">
-                    <h3 class="trip-name">
-                        <span class="trip-flag">{{ trip.flag }}</span>
-                        <span class="trip-title">{{ trip.trip_name|title }}</span>
-                    </h3>
-
-                    <p class="trip-date">
-                        {{ trip.start_date }} ({{ trip.start_weekday }}.) → {{ trip.end_date }} ({{ trip.end_weekday }}.)
-                    </p>
-
-                    <p class="trip-total">
-                        Total: {{ "%.2f"|format(trip.total_in_base) }} TWD
-                    </p>
-                </div>
-
-                <div class="trip-buttons">
-                
-                    <a href="{{ url_for('editTrip', trip_id=trip.id) }}" class="btn btn-submit">
-                        Edit
-                    </a>
-
-                    <a href="{{ url_for('newExpense', trip_id=trip.id) }}" class="btn btn-submit">
-                        Add New Expense
-                    </a>
-
-                    <button
-                        type="button"
-                        class="btn btn-delete"
-                        data-id="{{ trip.id }}"
-                        data-name="{{ trip.trip_name }}"
-                    >
-                        Delete
-                    </button>
-                </div>
-
-            </li>
-            {% endfor %}
-        </ul>
     </div>
 
     <!-- Flexible Modal for Delete / Errors -->
