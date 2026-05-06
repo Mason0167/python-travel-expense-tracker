@@ -190,20 +190,9 @@ input[type="date"].input-field {
 }
 
 .btn-small {
-    font-size: 0.85rem;
-    padding: 3px 8px;
+    font-size: 0.9rem;
+    padding: 5px 10px;
     border-radius: 14px;
-}
-
-
-
-/* Nav buttons */
-.button-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
 }
 
 .btn-home {
@@ -249,6 +238,8 @@ input[type="date"].input-field {
     display: grid;
     grid-template-areas: ". home-link log-out";
     grid-template-columns: 1fr 1fr 1fr;
+
+    margin-bottom: 20px;
 }
 
 .nav-home-container{
@@ -398,41 +389,17 @@ input[type="date"].input-field {
     color: #6a0dad;
 }
 
-
-
-/* Payment methods */
-.payment-methods {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-}
-
-.payment-option {
-    width: auto;
-    display: block;
-    align-items: center;
-    cursor: pointer;
-    background-color: #e6ccff;
-    padding: 6px 12px;
-    border-radius: 20px;
-    transition: background-color 0.2s;
-}
-
-.payment-option input {
-    display: none; /* hide radio circle */
-    accent-color: #7b2cff;
-}
-
-.payment-option span {
-    pointer-events: none; /* so clicking text selects radio */
-}
-
-.payment-option input:checked + span {
-    background-color: #c080ff;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
+.btn-new-expense{
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* Pull the button back by half its own width */
+    
+    /* Mobile-App Styling */
+    padding: 15px 28px;
+    background-color: #a366ff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;   /* Ensure it stays above all other content */
 }
 
 

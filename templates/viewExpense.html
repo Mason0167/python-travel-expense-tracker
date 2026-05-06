@@ -16,22 +16,24 @@
     <div class="container">
 
         <!-- Nav Bar -->
-        <div class="button-row">
-            <!-- Home button with house icon -->
-            <a href="{{ url_for('index') }}">
-                <button class="btn btn-home">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9z"/>
-                    </svg>
-                </button>
-            </a>
+        <div class="nav-container">
+            <div class="nav-home-container">
+                <!-- Home button with house icon -->
+                <a href="{{ url_for('index') }}">
+                    <button class="btn btn-home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9z"/>
+                        </svg>
+                    </button>
+                </a>
+            </div>
 
-            {% if trip %}
-            <a href="{{ url_for('newExpense', trip_id=trip.id) }}">
-                <button type="button" class="btn btn-equal">New Expense</button>
-            </a>
-            {% endif %}
+            <div class="nav-logout">
+                <a href="{{ url_for('logout') }}">
+                    <button class="btn btn-danger">Logout</button>
+                </a>
+            </div>
         </div>
 
         <!-- Trip Info Card -->
@@ -60,7 +62,7 @@
 
         </div>
         {% endif %}
-        
+
         <form method="GET" class="form-box">
             <fieldset>
                 <legend id="expense-title">Filter By</legend>
@@ -148,9 +150,11 @@
             <p>No Expense for this trip.</p>
         {% endif %}
 
-        <!-- <a href="{{ url_for('newExpense', trip_id=trip.id) }}" class="btn btn-submit">
-                            New Expense
-                        </a> -->
+        {% if trip %}
+        <a href="{{ url_for('newExpense', trip_id=trip.id) }}">
+            <button type="button" class="btn btn-equal btn-new-expense">New Expense</button>
+        </a>
+        {% endif %}
     </div>
 
     <!-- Flexible Modal for Delete / Errors -->
