@@ -18,6 +18,17 @@ body {
     padding: 10px;
 }
 
+.container {
+    width: 100%;
+    max-width: 400px;
+    min-height: 700px;
+    background-color: #f8f0ff;
+
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
 button, input, select, textarea {
     font-family: inherit;
 }
@@ -35,7 +46,13 @@ a{
 .form-box {
     display: flex;
     flex-direction: column;
+    background-color: #fff;
+
     margin-bottom: 20px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    max-width: 500px;
 }
 
 label {
@@ -56,7 +73,6 @@ select {
 
 .input-field,
 select.input-field {
-    width: 100%;
     padding: 14px 12px;
     font-size: 1em;
     border-radius: 14px;
@@ -92,15 +108,6 @@ select.input-field:focus {
 .form-box label + select,
 .form-box label + input {
     margin-bottom: 12px;
-}
-
-.form-box {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    max-width: 500px;
-    margin: 20px auto;
 }
 
 input[type="date"] {
@@ -217,21 +224,6 @@ input[type="date"].input-field {
     display: flex;
     gap: 5px; /* space between buttons */
 }
-
-
-
-/* index */
-.container {
-    width: 100%;
-    max-width: 400px;
-    min-height: 900px;
-    background-color: #f8f0ff;
-
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
 
 /* nav */
 .nav-container{
@@ -358,9 +350,31 @@ input[type="date"].input-field {
     color: #ff66b2; /* cute pink for Total Cost */
 }
 
+/* Button Group Layout */
+.trip-buttons {
+    display: flex;      /* horizontal alignment */
+    gap: 10px;
+    margin-top: 15px;
+    width: 100%;
+    align-items: center;
+}
+
+.trip-buttons > .btn {
+    font-size: 0.85rem;
+}
+
+.trip-buttons a:nth-child(2) {
+    flex-grow: 1;     /* 佔據所有剩餘空間 */
+    text-align: center; /* 讓文字居中 */
+}
 
 
-/* newTrip Title */
+
+/* newTrip */
+#newTrip-body{
+    width: 1215.1px;
+}
+
 .trip-header {
     display: flex;
     justify-content: center; /* center horizontally */
@@ -378,6 +392,20 @@ input[type="date"].input-field {
 
 .trip-label {
     font-size: 1.5rem;         /* match H1 */
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    align-items: center;
+}
+
+.form-row label {
+    margin-right: 8px;
+}
+
+.date-input-field{
+    width: auto;
 }
 
 
@@ -440,31 +468,46 @@ input[type="date"].input-field {
 
 
 
-
-
-
-
-/* Button Group Layout */
-.trip-buttons {
-    display: flex;      /* horizontal alignment */
-    gap: 10px;
-    margin-top: 15px;
+/* newExpense */
+.input-field,
+select.input-field {
     width: 100%;
+}
+
+.payment-methods {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.payment-option {
+    width: auto;
+    display: block;
     align-items: center;
+    cursor: pointer;
+    background-color: #e6ccff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background-color 0.2s;
 }
 
-.trip-buttons > .btn {
-    font-size: 0.85rem;
+.payment-option input {
+    display: none; /* hide radio circle */
+    accent-color: #7b2cff;
 }
 
-.trip-buttons a:nth-child(2) {
-    flex-grow: 1;     /* 佔據所有剩餘空間 */
-    text-align: center; /* 讓文字居中 */
+.payment-option span {
+    pointer-events: none; /* so clicking text selects radio */
 }
 
+.payment-option input:checked + span {
+    background-color: #c080ff;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
 
-
-/* newExpense Category Cards */
 .categories-container {
     display: flex;
     flex-wrap: wrap;  /* 多個 category 卡片換行 */

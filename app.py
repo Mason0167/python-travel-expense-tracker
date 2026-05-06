@@ -545,7 +545,6 @@ def newExpense():
         categories_list = []
         paymentMethods_list = []
         currencies_list = []
-        all_expenses = []
         
         category = ''
         payment_method = ''
@@ -682,38 +681,7 @@ def newExpense():
                         errors = True
         else:
             if request.method == 'POST':
-                flash("Please select a trip before add a new expense!", "error")        
-
-
-        # Fetch expenses only for selected trip
-        if trip_id:
-            c.execute('''
-                      SELECT e.id, e.purchase_date, c.cat_name, e.item, e.amount, cu.code, cu.symbol
-                      FROM expenses e
-                      JOIN categories c ON e.category_id = c.id
-                      JOIN currencies cu ON e.currency_id = cu.id
-                      WHERE trip_id = ? 
-                      AND user_id = ?
-                      ORDER BY e.purchase_date DESC
-            ''', (trip_id, user_id))
-            rows = c.fetchall()
-
-            for e in rows:
-                all_expenses.append({
-                'id': e[0],
-                'purchase_date': e[1],
-                'category': e[2],
-                'item': e[3],
-                'amount': e[4],
-                'code': e[5],
-                'symbol': e[6]
-                })
-    
-        grouped_expenses = {}
-    
-        for e in all_expenses:
-            date = e['purchase_date']
-            grouped_expenses.setdefault(date, []).append(e)
+                flash("Please select a trip before add a new expense!", "error")
     
     return render_template(
         'newExpense.html', 
@@ -722,7 +690,6 @@ def newExpense():
         selected_trip=trip_id,
         row=row,
         trips=trips,
-        grouped_expenses=grouped_expenses,
         
         categories_list=categories_list,
         paymentMethods_list=paymentMethods_list,

@@ -14,39 +14,28 @@
 
 <body>
     <div class="container">
-        <div class="button-row">
-            <!-- Home button with house icon -->
-            <a href="{{ url_for('index') }}">
-                <button class="btn btn-home">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9z"/>
-                    </svg>
-                </button>
-            </a>
+        <!-- Nav Bar -->
+        <div class="nav-container">
+            <div class="nav-home-container">
+                <!-- Home button with house icon -->
+                <a href="{{ url_for('index') }}">
+                    <button class="btn btn-home">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9z"/>
+                        </svg>
+                    </button>
+                </a>
+            </div>
 
-            <!-- <a href="{{ url_for('index') }}">
-                <button type="button" class="btn btn-equal">Add New Trip</button>
-            </a>
-
-            <a href="{{ url_for('viewExpense') }}">
-                <button type="button" class="btn btn-equal">View All Expense</button>
-            </a> -->
+            <div class="nav-logout">
+                <a href="{{ url_for('logout') }}">
+                    <button class="btn btn-danger">Logout</button>
+                </a>
+            </div>
         </div>
 
-        <!-- Trip Dropdown -->
-        <form method="GET" id="trip-dropdown" class="trip-header">
-            <select name="trip_id" onchange="this.form.submit()">
-                <option value="">All Trips</option>
-                {% for trip in trips %}
-                    <option value="{{ trip.id }}" {% if selected_trip == trip.id %}selected{% endif %}>
-                    {{ trip.trip_name|title }}
-                    </option>
-                {% endfor %}
-            </select>
-            <span class="trip-label">Expenses</span>
-        </form>
-
+        <h1>Create New Expense</h1>
 
         <form method="POST" class="form-box">
             <!-- Date -->
@@ -105,42 +94,6 @@
             <!-- Submit -->
             <button type="submit" class="btn btn-submit">Add</button>
         </form>
-
-        <!-- 支出列表 -->
-        {% if grouped_expenses %}
-        <h3>All Expenses For {{ row.trip_name|title }} {{ row.flag }}</h3>
-            <div class="categories-container">
-                {% for date, expenses in grouped_expenses.items() %}
-                    <div class="category-card">
-                        <h3 class="category-title">{{ date }}</h3>
-                        <ul class="expense-list">
-                            {% for e in expenses %}
-                                <li class="expense-row">
-                                    <span class="expense-text">
-                                        {{ e.item|capitalize }} : {{ e.code }} {{ e.symbol }}{{ "%.2f"|format(e.amount) }}
-                                    </span>
-
-                                    <div class="expense-buttons">
-                                        <a href="{{ url_for('editExpense', trip_id=selected_trip, expense_id=e.id, next=request.path) }}" class="btn btn-submit btn-small">
-                                            Edit
-                                        </a>
-
-                                        <button type="button"
-                                                class="btn btn-delete-expense btn-small"
-                                                data-id="{{ e.id }}"
-                                                data-item="{{ e.item }}">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p>No Expense for this trip.</p>
-        {% endif %}
     </div>
 
     <!-- Flexible Modal for Delete / Errors -->
