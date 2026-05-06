@@ -14,8 +14,6 @@
 
 <body>
     <div class="container">
-
-        <!-- Nav Bar -->
         <div class="button-row">
             <!-- Home button with house icon -->
             <a href="{{ url_for('index') }}">
@@ -27,12 +25,70 @@
                 </button>
             </a>
 
-            {% if trip %}
             <a href="{{ url_for('newExpense', trip_id=trip.id) }}">
-                <button type="button" class="btn btn-equal">New Expense</button>
+                <button type="button" class="btn btn-equal">Add New Expense</button>
             </a>
-            {% endif %}
         </div>
+
+        <h1>View All Expenses</h1>
+        
+        <form method="GET" class="form-box">
+            <!-- Trip Dropdown -->
+            <label>
+                Select Trip:
+                <select name="trip_id" id="tripSelect" onchange="handleTripChange()"">
+                    <option value="">All Trips</option>
+                    {% for trip in trips %}
+                        <option value="{{ trip.id }}" {% if selected_trip == trip.id %}selected{% endif %}>
+                        {{ trip.trip_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <!-- Date Dropdown -->
+            <label id="dateWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
+                Filter By Date:
+                <select name="purchase_date" onchange="this.form.submit()">
+                    <option value="">All Purchase Date</option>
+                    {% for date in dates %}
+                        <option value="{{ date }}" {% if selected_date == date %}selected{% endif %}>
+                        {{ date }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <!-- Category Dropdown -->
+             <label id="catWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
+                Filter By Category:
+                <select name="category_name" onchange="this.form.submit()">
+                    <option value="">All Category</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                        {{ category|capitalize }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <!-- Payment Method -->
+            <label id="paymentWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
+                Filter By Payment Method:
+            </label>
+            <div class="payment-methods">
+                {% for paymentMethod in paymentMethods_list %}
+                <label class="payment-option">
+                    <input type="radio" name="payment_method" 
+                        data-value="{{ paymentMethod }}"
+                        {% if paymentMethod == selected_paymentMethod %} checked {% endif %}>
+                    <span>{{ paymentMethod|title }}</span>
+                </label>
+                {% endfor %}
+            </div>
+                
+            
+        </form>
 
         <!-- Trip Info Card -->
         {% if trip %}
@@ -60,57 +116,6 @@
 
         </div>
         {% endif %}
-        
-        <form method="GET" class="form-box">
-            <fieldset>
-                <legend id="expense-title">Filter By</legend>
-
-                <!-- To Get trip id  -->
-                <input type="hidden" name="trip_id" value="{{ selected_trip }}">
-
-                <!-- Date Dropdown -->
-                <label id="dateWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
-                   Date:
-                    <select name="purchase_date" onchange="this.form.submit()">
-                        <option value="">All Purchase Date</option>
-                        {% for date in dates %}
-                            <option value="{{ date }}" {% if selected_date == date %}selected{% endif %}>
-                            {{ date }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-                <!-- Category Dropdown -->
-                <label id="catWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
-                    Category:
-                    <select name="category_name" onchange="this.form.submit()">
-                        <option value="">All Category</option>
-                        {% for category in categories %}
-                            <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
-                            {{ category|capitalize }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-                <!-- Payment Method -->
-                <label id="paymentWrapper" style="display: {% if selected_trip %}block{% else %}none{% endif %};">
-                    Payment Method:
-                    <select name="payment_method" onchange="this.form.submit()">
-                        <option value="">All Method</option>
-                        {% for paymentMethod in paymentMethods_list %}
-                            <option value="{{ paymentMethod }}" {% if selected_paymentMethod == paymentMethod %}selected{% endif %}>
-                            {{ paymentMethod|title }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-
-            </fieldset>
-        </form>
-
-        
 
         <!-- Expense Lists/Cards -->
         {% if grouped_expenses %}

@@ -87,7 +87,6 @@ select.input-field:focus {
     font-size: 0.9em;
     font-weight: 600;
     color: #6a0dad;
-    margin-bottom: 8px;
 }
 
 .form-box label + select,
@@ -388,6 +387,15 @@ input[type="date"].input-field {
 
 .trip-label {
     font-size: 1.5rem;         /* match H1 */
+}
+
+
+
+/* viewExpense Filtering */
+#expense-title{
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #6a0dad;
 }
 
 

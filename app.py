@@ -741,18 +741,14 @@ def newExpense():
 @login_required
 def viewExpense():
     user_id = session['user_id']
-    errors = False
     
     dates = []
     categories = []
-    trips = []
     paymentMethods_list = []
-    
     expenses = []
     grouped_expenses = {}
     
     trip = None
-    payment_method = None
     
     total_in_base = 0
 
@@ -895,7 +891,6 @@ def viewExpense():
     return render_template(
         'viewExpense.html',
 
-        trips=trips,
         dates=dates,
         categories=categories,
         paymentMethods_list=paymentMethods_list,
@@ -984,15 +979,18 @@ def editTrip(trip_id):
 @app.route('/deleteTrip/<int:trip_id>', methods=['POST'])
 @login_required
 def deleteTrip(trip_id):
+    user_id = session['user_id']
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         c = conn.cursor()
         
         # Delete trip and its related expenses (if you have a foreign key)
         c.execute('''
-                DELETE FROM trips 
-                WHERE id = ?
-            ''', (trip_id,))
+                  DELETE FROM trips 
+                  WHERE id = ?
+                  AND user_id = ?
+            ''', (trip_id, user_id))
             
         conn.commit()
 
@@ -1083,10 +1081,11 @@ def editExpense(trip_id, expense_id):
                 if not errors:
                     # Now update the expense
                     c.execute('''
-                        UPDATE expenses
-                        SET purchase_date = ?, category_id = ?, method_id = ?, item = ?, amount = ?, currency_id = ?
-                        WHERE id = ?
-                    ''', (new_purchase_date, category_id, method_id, new_item, new_amount, currency_id, expense_id))
+                              UPDATE expenses
+                              SET purchase_date = ?, category_id = ?, method_id = ?, item = ?, amount = ?, currency_id = ?
+                              WHERE id = ?
+                              AND user_id = ?
+                    ''', (new_purchase_date, category_id, method_id, new_item, new_amount, currency_id, expense_id, user_id))
 
                     conn.commit()
                     flash("Expense updated successfully!", "success")
