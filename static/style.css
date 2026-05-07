@@ -256,6 +256,13 @@ input[type="date"].input-field {
     place-items: center end;
 } 
 
+/* Trip Title */
+.trip-title{
+    max-width: 240px;
+    overflow: hidden;
+}
+
+
 
 /* Index Countries Flags */
 .visited-countries {

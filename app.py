@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import sqlite3, csv, io
+import sqlite3, csv, io, re
 
 
 app = Flask(__name__)
