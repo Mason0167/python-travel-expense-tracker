@@ -2,6 +2,12 @@
 
 A personal travel expense tracker built with **Flask** and **SQLite**. Log expenses across multiple trips, filter by category or payment method, and export your data — all tied to your own account.
 
+## Live Demo
+
+The app is deployed and accessible at https://accounting-app-dt7o.onrender.com
+
+Hosted on Render. Note that the app may take 30–60 seconds to load on first visit as Render spins down free-tier services when inactive — just wait a moment and it will be up.
+
 ---
 
 ## Features
