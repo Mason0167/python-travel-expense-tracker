@@ -371,10 +371,6 @@ input[type="date"].input-field {
 
 
 /* newTrip */
-#newTrip-body{
-    width: 1215.1px;
-}
-
 .trip-header {
     display: flex;
     justify-content: center; /* center horizontally */

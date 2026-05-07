@@ -61,7 +61,14 @@ def init_db():
             ('South Korea', 'KR'),
             ('Vietnam', 'VN'),
             ('United States', 'US'),
-            ('United Kingdom', 'GB')
+            ('United Kingdom', 'GB'),
+            ('Canada', 'CA'),
+            ('Thailand', 'TH'),
+            ('Singapore', 'SG'),
+            ('Malaysia', 'MY'),
+            ('Mexico', 'MX'),
+            ('Austria', 'AT'),
+            ('Ireland', 'IE')
         ]
         
         c.executemany(
@@ -127,7 +134,12 @@ def init_db():
             ('VND', 'Vietnamese Dong', '₫'),
             ('USD', 'US Dollar', '$'),
             ('EUR', 'Euro', '€'),
-            ('GBP', 'British Pound', '£')
+            ('GBP', 'British Pound', '£'),
+            ('CAD', 'Canadian Dollar', '$'),
+            ('THB', 'Thai Baht', '฿'),
+            ('SGD', 'Singapore Dollar', '$'),
+            ('MYR', 'Malaysian Ringgit', 'RM'),
+            ('MXN', 'Mexican Peso', '$')
         ]
 
         for code, currency_name, symbol in default_currencies:
@@ -154,7 +166,12 @@ def init_db():
             ('VND', 0.001187),
             ('USD', 31.215),
             ('EUR', 36.617),
-            ('GBP', 41.761)
+            ('GBP', 41.761),
+            ('CAD', 23.040),
+            ('THB', 0.975),
+            ('SGD', 24.779),
+            ('MYR', 8.004),
+            ('MXN', 1.820),
         ]
 
         for code, rate in default_exchange_rates:
@@ -206,17 +223,17 @@ def login_required(f):
     
 # Validate password strongness
 def is_strong_password(password):
-    # if len(password) < 8:
-    #     return False, "Password must be at least 8 characters long"
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
 
-    # if not re.search(r"[A-Z]", password):
-    #     return False, "Password must contain at least one uppercase letter"
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter"
 
-    # if not re.search(r"[a-z]", password):
-    #     return False, "Password must contain at least one lowercase letter"
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter"
 
-    # if not re.search(r"[0-9]", password):
-    #     return False, "Password must contain at least one number"
+    if not re.search(r"[0-9]", password):
+        return False, "Password must contain at least one number"
 
     if " " in password:
         return False, "Password cannot contain spaces"
@@ -552,36 +569,9 @@ def newExpense():
         amount_str = ''
         currency = ''
         
-        # Fetch all trips for dropdown
-        c.execute('''
-                  SELECT id, trip_name 
-                  FROM trips 
-                  WHERE user_id = ?
-                  ORDER BY start_date
-                  ''', (user_id, ))
-        trips = [{'id': r[0], 'trip_name': r[1]} for r in c.fetchall()]
-        
         trip_id = request.args.get('trip_id', type=int)
             
         if trip_id:
-            # Fetch trip_name, start_date for trip info card
-            c.execute('''
-                      SELECT t.trip_name, t.start_date, c.country_code
-                      FROM trips t
-                      JOIN countries c ON t.country_id = c.id
-                      WHERE t.id = ?
-                      AND t.user_id = ?
-            ''', (trip_id, user_id))
-            row = c.fetchone()
-            if row:
-                row = {
-                    'trip_name': row[0],
-                    'start_date': row[1],
-                    'country_code': row[2],
-                    'flag': country_flag(row[2])
-                }
-            else:
-                trip_name = start_date = trip_flag = None
         
             # Fetch categories table for dropdown
             c.execute('SELECT * FROM categories')
@@ -968,6 +958,7 @@ def deleteTrip(trip_id):
 @login_required
 def editExpense(trip_id, expense_id):
     user_id = session['user_id']
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
         c = conn.cursor()
